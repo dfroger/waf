@@ -1,0 +1,67 @@
+import os
+import platform
+
+top = os.path.abspath('.')
+
+def options(opt):
+    if not platform.system() == 'Darwin':
+        raise OSError, "This example is for OSX only."
+
+    opt.load('compiler_cxx')
+    opt.load('install_name', tooldir='.')
+
+    opt.add_option('--which-foo',
+        action = 'store',
+        type = 'choice',
+        choices = ['system', 'pkg-manager', 'build'],
+        default = 'system',
+        help = 'Which foo library to use',
+    )
+
+    opt.add_option('--use-install-name',
+        action = 'store_true',
+        default = False,
+        help = 'Use install_name tool',
+    )
+
+def configure(conf):
+    conf.load('compiler_cxx')
+    conf.load('install_name', tooldir='.')
+
+    conf.env.WHICH_FOO = conf.options.which_foo
+    conf.env.USE_INSTALL_NAME = conf.options.use_install_name
+
+    if conf.env.WHICH_FOO == 'pkg-manager':
+        conf.env.LIBPATH_FOO = os.path.abspath('pkg-manager')
+        conf.env.RPATH_FOO = os.path.abspath('pkg-manager')
+        conf.check_cxx(lib='foo', use='FOO')
+
+    elif conf.env.WHICH_FOO == 'system':
+        conf.env.LIBPATH_FOO = top
+        conf.check_cxx(lib='foo', use='FOO')
+
+    elif conf.env.WHICH_FOO == 'build':
+        pass
+
+    else:
+        raise ValueError, 'Unexpected WHICH_FOO value: %r' % (bld.env.WHICH_FOO,)
+
+def build(bld):
+
+    if bld.env.WHICH_FOO == 'build':
+        bld.recurse('foo')
+
+    if bld.env.WHICH_FOO == 'pkg-manager' and bld.env.USE_INSTALL_NAME:
+        bld.program(
+            source = 'demo.cxx',
+            target = 'demo',
+            use  = 'FOO',
+            install_name_changes = {'libfoo.dylib': '@rpath/libfoo.dylib'},
+        )
+
+    else:
+        bld.program(
+            source = 'demo.cxx',
+            target = 'demo',
+            use  = 'FOO',
+        )

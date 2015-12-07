@@ -1,0 +1,18 @@
+def build(bld):
+  
+    if bld.env.USE_INSTALL_NAME:
+        bld.shlib(
+            features = 'cxx',
+            source = 'foo-build.cxx',
+            target = 'foo',
+            install_name_dir = '@loader_path/../lib',
+            name = 'FOO',
+        )
+
+    else:
+        bld.shlib(
+            features = 'cxx',
+            source = 'foo-build.cxx',
+            target = 'foo',
+            name = 'FOO',
+        )
